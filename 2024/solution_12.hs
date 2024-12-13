@@ -91,8 +91,14 @@ getRegion g (q : qs) v = S.insert q $ getRegion g nq nv
     nq = ns ++ qs
     nv = S.insert q v
 
+getRegionPrice :: Region -> Int
+getRegionPrice r = length r * getRegionSides r
+
 getRegionSides :: Region -> Int
 getRegionSides r = sum [1 | dir <- vCardinalDirs, v <- S.elems r, S.notMember (v .+. dir) r]
+
+getRegionPriceDiscount :: Region -> Int
+getRegionPriceDiscount r = length r * getRegionCorners r
 
 getRegionCorners :: Region -> Int
 getRegionCorners r = sum $ map (getVectorCorners r) $ S.elems r
@@ -103,32 +109,18 @@ getVectorCorners r v = getVectorCorners' neighbors
     neighbors = S.fromList [dir | dir <- vAllDirs, let v' = v .+. dir, S.member v' r]
 
 getVectorCorners' :: S.Set Vector -> Int
-getVectorCorners' v = ii1 + ii2 + ii3 + ii4 + dd5 + dd6 + dd7 + dd8
+getVectorCorners' v = length $ filter id [i1, i2, i3, i4, o1, o2, o3, o4]
   where
     -- Inside corners
-    i1 = S.fromList [vLeft, vUp]
-    i2 = S.fromList [vRight, vUp]
-    i3 = S.fromList [vLeft, vDown]
-    i4 = S.fromList [vRight, vDown]
-    ii1 = if S.disjoint v i1 then 1 else 0
-    ii2 = if S.disjoint v i2 then 1 else 0
-    ii3 = if S.disjoint v i3 then 1 else 0
-    ii4 = if S.disjoint v i4 then 1 else 0
+    i1 = S.disjoint v $ S.fromList [vLeft, vUp]
+    i2 = S.disjoint v $ S.fromList [vRight, vUp]
+    i3 = S.disjoint v $ S.fromList [vLeft, vDown]
+    i4 = S.disjoint v $ S.fromList [vRight, vDown]
     -- Outside corners
-    d1 = S.fromList [vLeft, vUpLeft, vUp]
-    d2 = S.fromList [vRight, vUpRight, vUp]
-    d3 = S.fromList [vLeft, vDownLeft, vDown]
-    d4 = S.fromList [vRight, vDownRight, vDown]
-    dd5 = if S.difference d1 v == S.singleton vUpLeft then 1 else 0
-    dd6 = if S.difference d2 v == S.singleton vUpRight then 1 else 0
-    dd7 = if S.difference d3 v == S.singleton vDownLeft then 1 else 0
-    dd8 = if S.difference d4 v == S.singleton vDownRight then 1 else 0
-
-getRegionPrice :: Region -> Int
-getRegionPrice r = length r * getRegionSides r
-
-getRegionPriceDiscount :: Region -> Int
-getRegionPriceDiscount r = length r * getRegionCorners r
+    o1 = S.difference (S.fromList [vLeft, vUpLeft, vUp]) v == S.singleton vUpLeft
+    o2 = S.difference (S.fromList [vRight, vUpRight, vUp]) v == S.singleton vUpRight
+    o3 = S.difference (S.fromList [vLeft, vDownLeft, vDown]) v == S.singleton vDownLeft
+    o4 = S.difference (S.fromList [vRight, vDownRight, vDown]) v == S.singleton vDownRight
 
 part1 :: Regions -> Int
 part1 = sum . map getRegionPrice . S.elems
@@ -141,6 +133,5 @@ main = do
   s <- getContents
   let grid = getGrid s
   let regions = getRegions grid
-  -- print $ map (\r -> (r, getRegionCorners r)) $ S.elems regions
   printf "Part 1: %d\n" $ part1 regions
   printf "Part 2: %d\n" $ part2 regions
