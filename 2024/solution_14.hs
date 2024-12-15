@@ -1,5 +1,5 @@
-import Control.Concurrent (threadDelay)
-import Control.Monad (forever)
+import Data.Function (on)
+import Data.List (minimumBy)
 import Data.Set qualified as S
 import Text.Printf
 
@@ -52,7 +52,15 @@ part1 rs = uL * uR * dL * dR
     (uL, uR, dL, dR) = quadrantCounts w h $ map (modRobot w h . stepN 100) rs
 
 part2 :: [Robot] -> Int
-part2 _ = 7286
+part2 rs =
+  snd $
+    minimumBy
+      (compare `on` fst)
+      [ (uL * uR * dL * dR, n) | n <- [0 .. w * h], let (uL, uR, dL, dR) = quadrantCounts w h $ map (modRobot w h . stepN n) rs
+      ]
+  where
+    w = 101
+    h = 103
 
 visualize :: [Robot] -> IO ()
 visualize rs = do
@@ -67,23 +75,11 @@ visualize rs = do
           ]
   mapM_ print (lines grid)
 
-visualizeN :: Int -> Int -> [Robot] -> IO ()
-visualizeN start end _
-  | start == end = return ()
-visualizeN n end rs = do
-  threadDelay 200000
-  visualize newRs
-  printf "Step %d\n" nextStepN
-  visualizeN (n + 1) end rs
-  where
-    nextStepN = n * 103 + 76
-    newRs = map (modRobot 101 103 . stepN nextStepN) rs
-
 main :: IO ()
 main = do
   s <- getContents
   let robots = parse s
-  -- visualizeN 1 100 robots
-  visualize $ map (modRobot 101 103 . stepN 7286) robots
+  let p2 = part2 robots
+  visualize $ map (modRobot 101 103 . stepN p2) robots
   printf "Part 1: %d\n" $ part1 robots
-  printf "Part 2: %d\n" $ part2 robots
+  printf "Part 2: %d\n" p2
